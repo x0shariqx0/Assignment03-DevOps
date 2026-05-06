@@ -14,15 +14,40 @@ pipeline {
 
         stage('Code Linting') {
             steps {
-                sh 'python3 -m pip install --user flake8'
-                sh 'python3 -m flake8 app.py'
+                sh '''
+                    docker run --rm \
+                    -v "$PWD":/app \
+                    -w /app \
+                    python:3.11-slim \
+                    sh -c "pip install flake8 && flake8 app.py"
+                '''
             }
         }
 
-        stage('E2E Build and Test') {
+        stage('Code Build') {
+            steps {
+                sh 'docker build -t flask-notes-app .'
+            }
+        }
+
+        stage('Containerized Deployment') {
             steps {
                 sh 'docker compose down -v || true'
-                sh 'docker compose up --build --abort-on-container-exit --exit-code-from tests tests'
+                sh 'docker compose up -d --build'
+                sh 'sleep 40'
+                sh 'docker ps'
+            }
+        }
+
+        stage('Containerized Selenium Testing') {
+            steps {
+                sh 'docker build -t flask-notes-selenium ./selenium-tests'
+                sh '''
+                    docker run --rm \
+                    --network assignment-03_default \
+                    -e APP_URL=http://web:5000 \
+                    flask-notes-selenium
+                '''
             }
         }
     }
@@ -31,9 +56,11 @@ pipeline {
         always {
             sh 'docker compose down -v || true'
         }
+
         success {
             echo 'Pipeline completed successfully.'
         }
+
         failure {
             echo 'Pipeline failed.'
         }
