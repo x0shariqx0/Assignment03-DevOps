@@ -1,0 +1,65 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: notes-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: notesdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  web:
+    build: .
+    container_name: flask-notes-app
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: notesdb
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 25s
+
+  selenium:
+    image: selenium/standalone-chrome:127.0
+    container_name: selenium-chrome
+    shm_size: 2gb
+    ports:
+      - "4444:4444"
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "curl -fsS http://localhost:4444/status >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 25
+      start_period: 20s
+
+  tests:
+    build: ./selenium-tests
+    container_name: selenium-tests-runner
+    environment:
+      APP_URL: http://web:5000
+      SELENIUM_URL: http://selenium:4444
+    depends_on:
+      web:
+        condition: service_healthy
+      selenium:
+        condition: service_healthy
+
+volumes:
+  mysql-data:

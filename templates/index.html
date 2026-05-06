@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Notes App</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Student Notes App</h1>
+        <p class="subtitle">A simple Flask web app connected with MySQL database.</p>
+
+        <form action="/add" method="POST" class="note-form">
+            <input type="text" name="note" placeholder="Write your note here..." required>
+            <button type="submit">Add Note</button>
+        </form>
+
+        <h2>Saved Notes</h2>
+
+        <div class="notes">
+            {% if notes %}
+                {% for note in notes %}
+                    <div class="note-card">
+                        <span>{{ note.text }}</span>
+                        <a href="/delete/{{ note.id }}">Delete</a>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty">No notes added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
