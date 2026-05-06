@@ -32,10 +32,11 @@ pipeline {
 
         stage('Containerized Deployment') {
             steps {
-                sh 'docker compose down -v || true'
-                sh 'docker compose up -d --build'
+                sh 'docker-compose down -v || true'
+                sh 'docker-compose up -d --build'
                 sh 'sleep 40'
                 sh 'docker ps'
+                sh 'docker network ls'
             }
         }
 
@@ -54,7 +55,7 @@ pipeline {
 
     post {
         always {
-            sh 'docker compose down -v || true'
+            sh 'docker-compose down -v || true'
         }
 
         success {
